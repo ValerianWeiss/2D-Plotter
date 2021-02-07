@@ -16,13 +16,11 @@ import SerialComService from './services/SerialComService';
   }
 })
 export default class App extends Vue {
-
   public mounted() {
     SerialComService.getSocket().then(socket => {
       socket.send('Hello World!');
     });
   }
-
 }
 </script>
 
