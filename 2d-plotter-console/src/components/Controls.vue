@@ -41,11 +41,11 @@
       </div>
       <div class="z-controls">
         <div class="control-btn flex-center up-btn">
-          <i class="fas fa-arrow-up fa-m"></i>
+          <span>⇧</span>
           <span class="z-control-btn-label">+z</span>
         </div>
         <div class="control-btn flex-center down-btn">
-          <i class="fas fa-arrow-down fa-m"></i>
+          <span>␣</span>
           <span class="z-control-btn-label">-z</span>
         </div>
       </div>
@@ -122,6 +122,9 @@ export default class Controls extends Vue {
   background: rgb(255, 140, 50)
   border-radius: 5px
 
+  &:hover
+    background: rgba(255, 140, 50, .7)
+
 .up-btn
   grid-area: up
 
@@ -140,6 +143,6 @@ export default class Controls extends Vue {
 
 .z-control-btn-label
   position: absolute
-  bottom: 0.2rem
+  bottom: 0.1rem
   font-size: 0.75rem
 </style>
