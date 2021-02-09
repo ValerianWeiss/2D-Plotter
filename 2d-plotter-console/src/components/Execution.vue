@@ -91,6 +91,8 @@ export default class Execution extends Vue {
     this.resolution = this.parseResolution(this.file);
   }
 
+  // TODO: implement parsing
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private parseResolution(file: File) {
     return '1024 x 720';
   }
