@@ -94,7 +94,6 @@ export default class Controls extends Vue {
   .com-status-txt
     margin-left: .5rem
     color: white
-    font-family: Ubuntu, sans-serif
     font-size: .9rem
 
 

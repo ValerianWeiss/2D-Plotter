@@ -113,7 +113,6 @@ export default class Execution extends Vue {
 .content-container
   position: relative
   color: white
-  font-family: Ununtu, sans-serif
 
 .file-selector
   width: 100%
@@ -123,7 +122,6 @@ export default class Execution extends Vue {
     width: 100%
     background: rgb(0, 122, 204)
     color: white
-    font-family: Ununtu, sans-serif
     cursor: pointer
 
     &:hover
