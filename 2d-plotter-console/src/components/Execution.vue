@@ -9,6 +9,7 @@
           <input type="file" @change="this.handleFileChange" />
         </label>
         <div class="selected-file-info">Selected file: {{ this.filename }}</div>
+        <div class="selected-file-info">Resolution: {{ this.resolution }}</div>
       </div>
       <div class="progress flex-center">
         <radial-progress-bar
@@ -58,6 +59,7 @@ export default class Execution extends Vue {
   private progress: number;
   private isPlotting: boolean;
   private radialProgressAnimateSpeed: number;
+  private resolution: string;
 
   public constructor() {
     super();
@@ -65,6 +67,7 @@ export default class Execution extends Vue {
     this.progress = 50;
     this.isPlotting = false;
     this.radialProgressAnimateSpeed = 1000;
+    this.resolution = '-';
   }
 
   get filename() {
@@ -85,6 +88,11 @@ export default class Execution extends Vue {
 
   private handleFileChange(event: { target: { files: File[] } }) {
     this.file = event.target.files[0];
+    this.resolution = this.parseResolution(this.file);
+  }
+
+  private parseResolution(file: File) {
+    return '1024 x 720';
   }
 
   private startPlotting() {
@@ -132,7 +140,7 @@ export default class Execution extends Vue {
   text-overflow: ellipsis
 
 .progress
-  padding-top: 2.5rem
+  padding-top: 2rem
 
 .action-bar
   position: absolute
