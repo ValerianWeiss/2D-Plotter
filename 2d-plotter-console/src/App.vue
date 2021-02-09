@@ -8,6 +8,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import Layout from './components/Layout.vue';
 import SerialComService from './services/SerialComService';
+import './styles/main.sass';
 
 @Component({
   components: {
@@ -22,9 +23,3 @@ export default class App extends Vue {
   }
 }
 </script>
-
-<style lang="sass">
-body
-  margin: 0
-  padding: 0
-</style>

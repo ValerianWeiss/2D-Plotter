@@ -1,10 +1,10 @@
 <template>
   <div id="Layout">
     <main>
-      <Execution class="execution" />
-      <Controls class="controls" />
-      <Parameters class="parameters" />
-      <Logging class="logging" />
+      <Execution class="execution cell" />
+      <Controls class="controls cell" />
+      <Parameters class="parameters cell" />
+      <Logging class="logging cell" />
     </main>
   </div>
 </template>
@@ -40,9 +40,15 @@ export default class Layout extends Vue {}
 .parameters
   grid-area: parameters
 
+.cell
+  margin: 1.5rem
+  overflow: hidden
+
 main
   display: grid
   height: 100vh
-  widh: 100vw
+  width: 100vw
+  grid-template-columns: 1fr 1fr 1fr
+  grid-template-rows: 61.8vh 38.2vh
   grid-template-areas: 'execution controls parameters' 'logging logging logging'
 </style>
