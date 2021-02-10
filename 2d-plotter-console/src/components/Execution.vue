@@ -122,12 +122,12 @@ export default class Execution extends Vue {
   label
     height: 2rem
     width: 100%
-    background: rgb(0, 122, 204)
+    background: $btnColor
     color: white
     cursor: pointer
 
     &:hover
-      background: rgb(0, 100, 204)
+      background: $btnHoverColor
 
   input
     display: none
