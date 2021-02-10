@@ -153,13 +153,17 @@ export default class Execution extends Vue {
 
     .play
       color: rgb(70, 160, 50)
+      cursor: pointer
 
       &-disabled
         color: rgba(70, 160, 50, 0.2)
+        cursor: default
 
     .stop
+      cursor: pointer
       color: red
 
       &-disabled
         color: rgba(255, 0, 0, 0.2)
+        cursor: default
 </style>

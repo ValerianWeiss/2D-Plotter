@@ -121,6 +121,7 @@ export default class Controls extends Vue {
   height: 90%
   background: rgb(255, 140, 50)
   border-radius: 5px
+  cursor: pointer
 
   &:hover
     background: rgba(255, 140, 50, .7)

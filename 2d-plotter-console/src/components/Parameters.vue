@@ -22,8 +22,18 @@
     <div class="data-container">
       <span class="label">Resolution settings:</span>
       <div class="input-data-wrapper">
-        <input class="x-res" type="text" v-model="this.resolutionSettings.x" />
-        <input class="y-res" type="text" v-model="this.resolutionSettings.y" />
+        <input
+          class="x-res"
+          type="text"
+          v-model="resolutionSettings.x"
+          number
+        />
+        <input
+          class="y-res"
+          type="text"
+          v-model="resolutionSettings.x"
+          number
+        />
       </div>
     </div>
   </div>
@@ -35,12 +45,16 @@ import { Component, Vue } from 'vue-property-decorator';
 @Component
 export default class Parameters extends Vue {
   private currentPosition: { x: string; y: string; z: string };
-  private resolutionSettings: { x: number; y: number };
+  private resolutionSettings: { x: string; y: string };
 
   public constructor() {
     super();
     this.currentPosition = { x: '-', y: '-', z: '-' };
-    this.resolutionSettings = { x: 1024, y: 1024 };
+    this.resolutionSettings = { x: '1024', y: '1024' };
+  }
+
+  private print() {
+    console.log(this.resolutionSettings);
   }
 }
 </script>
@@ -63,6 +77,7 @@ export default class Parameters extends Vue {
   height: 2rem
   color: white
   background: $btnColor
+  cursor: pointer
 
   &:hover
     background: $btnHoverColor
@@ -97,6 +112,8 @@ export default class Parameters extends Vue {
 
 input
   width: 100%
+  padding: 5px
+  box-sizing: border-box
   color: white
   background: rgb(50,50,50)
   outline: none
