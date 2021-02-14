@@ -1,6 +1,6 @@
 <template>
   <div id="Execution">
-    <div class="content-container h-w-100">
+    <div class="content-container h-w-100" ref="contentContainer">
       <div class="file-selector">
         <label class="flex-center">
           <div class="button">
@@ -11,9 +11,9 @@
         <div class="selected-file-info">Selected file: {{ this.filename }}</div>
         <div class="selected-file-info">Resolution: {{ this.resolution }}</div>
       </div>
-      <div class="progress flex-center">
+      <div class="progress flex-center" ref="progressContainer">
         <radial-progress-bar
-          :diameter="200"
+          :diameter="this.progressDiameter"
           :completed-steps="this.progress"
           :total-steps="100"
           :stroke-width="2"
@@ -59,6 +59,7 @@ export default class Execution extends Vue {
   private progress: number;
   private isPlotting: boolean;
   private radialProgressAnimateSpeed: number;
+  private progressDiameter: number;
   private resolution: string;
 
   public constructor() {
@@ -67,6 +68,7 @@ export default class Execution extends Vue {
     this.progress = 50;
     this.isPlotting = false;
     this.radialProgressAnimateSpeed = 1000;
+    this.progressDiameter = 200;
     this.resolution = '-';
   }
 
@@ -84,6 +86,27 @@ export default class Execution extends Vue {
           startColor: '#F03B29',
           stopColor: '#FF1119'
         };
+  }
+
+  private mounted() {
+    window.addEventListener('resize', this.updateProgressDiameter);
+    this.updateProgressDiameter();
+  }
+
+  private updateProgressDiameter() {
+    const progressContainer = this.$refs.progressContainer;
+    const contentContainer = this.$refs.contentContainer;
+
+    if (
+      progressContainer instanceof Element &&
+      contentContainer instanceof Element
+    ) {
+      const diameter = Math.round(progressContainer.clientWidth * 0.8);
+
+      if (diameter <= contentContainer.clientHeight * 0.5) {
+        this.progressDiameter = progressContainer.clientWidth * 0.8;
+      }
+    }
   }
 
   private handleFileChange(event: { target: { files: File[] } }) {
@@ -143,10 +166,9 @@ export default class Execution extends Vue {
   padding-top: 2rem
 
 .action-bar
-  position: absolute
   display: flex
   width: 100%
-  bottom: 1rem
+  margin-top: 2rem
 
   .icon-wrapper
     width: 50%
