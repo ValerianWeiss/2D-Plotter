@@ -3,8 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "web:serve": "vue-cli-service serve",
-    "web:build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
     "build": "vue-cli-service electron:build",
     "serve": "vue-cli-service electron:serve",
