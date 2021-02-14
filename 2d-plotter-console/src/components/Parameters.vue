@@ -52,10 +52,6 @@ export default class Parameters extends Vue {
     this.currentPosition = { x: '-', y: '-', z: '-' };
     this.resolutionSettings = { x: '1024', y: '1024' };
   }
-
-  private print() {
-    console.log(this.resolutionSettings);
-  }
 }
 </script>
 
