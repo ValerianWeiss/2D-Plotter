@@ -49,6 +49,12 @@ main
   height: 100vh
   width: 100vw
   grid-template-columns: 1fr 1fr 1fr
-  grid-template-rows: 61.8vh 38.2vh
+  grid-auto-rows: minmax(min-content, max-content) 1fr
   grid-template-areas: 'execution controls parameters' 'logging logging logging'
+
+@media only screen and (min-height: 1600px)
+  main
+    grid-template-columns: 1fr
+    grid-template-rows: minmax(min-content, max-content) minmax(min-content, max-content) minmax(min-content, max-content) 1fr
+    grid-template-areas: 'execution'  'controls' 'parameters' 'logging'
 </style>

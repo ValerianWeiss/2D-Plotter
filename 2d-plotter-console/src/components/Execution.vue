@@ -1,6 +1,6 @@
 <template>
   <div id="Execution">
-    <div class="content-container h-w-100" ref="contentContainer">
+    <div class="content-container" ref="contentContainer">
       <div class="file-selector">
         <label class="flex-center">
           <div class="button">
@@ -168,6 +168,7 @@ export default class Execution extends Vue {
 .action-bar
   display: flex
   width: 100%
+  height: 2rem
   margin-top: 2rem
 
   .icon-wrapper
