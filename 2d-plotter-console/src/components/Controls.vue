@@ -98,7 +98,10 @@ export default class Controls extends Vue {
         );
 
         serialPort.on('open', () => {
-          console.log('open');
+          Logger.info(
+            `Serial connection to port ${this.selectedUsbPortPath} open`,
+            LogMessageId.CO_SERIAL_PORT_CON_OPEN
+          );
           this.isConnectedToCom = true;
         });
       } else {
