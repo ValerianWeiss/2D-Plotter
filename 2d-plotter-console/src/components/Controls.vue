@@ -6,13 +6,13 @@
           class="fas fa-stop fa-2x com-status-led"
           :class="{ 'com-status-led-is-connected': this.isConnectedToCom }"
         ></i>
-        <select class="com-selector" v-model="selectedUsbPort">
+        <select class="com-selector" v-model="selectedUsbPortPath">
           <option
             v-for="usbPort in usbPorts"
-            :value="usbPort.name"
-            :key="usbPort.name"
+            :value="usbPort.path"
+            :key="usbPort.path"
           >
-            {{ usbPort.name }}
+            {{ usbPort.path }}
           </option>
         </select>
         <span class="com-status-txt">
@@ -55,18 +55,59 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import SerialPort, { PortInfo } from 'serialport';
+import { Logger, LogMessageId } from '../services/LogService';
 
 @Component
 export default class Controls extends Vue {
   private isConnectedToCom: boolean;
-  private usbPorts: { name: string }[];
-  private selectedUsbPort: string;
+  private usbPorts: PortInfo[];
+  private selectedUsbPort: PortInfo | null;
+  private selectedUsbPortPath: string;
 
   public constructor() {
     super();
     this.isConnectedToCom = false;
-    this.usbPorts = [{ name: 'COM3' }, { name: 'COM4' }];
-    this.selectedUsbPort = this.usbPorts[0].name;
+    this.usbPorts = [];
+    this.selectedUsbPort = null;
+    this.selectedUsbPortPath = 'None';
+  }
+
+  private mounted() {
+    SerialPort.list().then(usbPorts => {
+      this.usbPorts = usbPorts;
+      if (usbPorts.length > 0) {
+        this.selectedUsbPort = this.usbPorts[0];
+        this.selectedUsbPortPath = this.usbPorts[0].path;
+        const serialPort = new SerialPort(
+          this.selectedUsbPort.path,
+          {
+            baudRate: 9600,
+            dataBits: 8, // defaults for Arduino serial communication
+            parity: 'none',
+            stopBits: 1
+          },
+          error => {
+            if (error) {
+              Logger.error(
+                `Could not connect to serial port ${this.selectedUsbPortPath}. Error: ${error}`,
+                LogMessageId.CO_SERIAL_PORT_CON_ERROR
+              );
+            }
+          }
+        );
+
+        serialPort.on('open', () => {
+          console.log('open');
+          this.isConnectedToCom = true;
+        });
+      } else {
+        Logger.warn(
+          'Could not find any serial ports',
+          LogMessageId.CO_SERIAL_PORT_CON_ERROR
+        );
+      }
+    });
   }
 }
 </script>
@@ -78,12 +119,15 @@ export default class Controls extends Vue {
   height: 2rem
 
   .com-selector
+    width: 50%
     margin-left: .5rem
     background: $appBackground
     color: white
     height: 100%
     border: none
     outline: none
+    white-space: nowrap
+    text-overflow: ellipsis
 
   .com-status-led
     color: red

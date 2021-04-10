@@ -10,6 +10,8 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } }
 ]);
 
+app.allowRendererProcessReuse = false;
+
 async function createWindow() {
   // Create the browser window.
   const win = new BrowserWindow({
