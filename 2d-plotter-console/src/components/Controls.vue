@@ -4,19 +4,19 @@
       <div class="com-status-container">
         <i
           class="fas fa-stop fa-2x com-status-led"
-          :class="{ 'com-status-led-is-connected': this.isConnectedToCom }"
+          :class="{ 'com-status-led-is-connected': this.isSerialPortOpen }"
         ></i>
-        <select class="com-selector" v-model="selectedUsbPortPath">
+        <select class="com-selector" v-model="serialPortPath">
           <option
-            v-for="usbPort in usbPorts"
-            :value="usbPort.path"
-            :key="usbPort.path"
+            v-for="serialPort in serialPorts"
+            :value="serialPort.path"
+            :key="serialPort.path"
           >
-            {{ usbPort.path }}
+            {{ serialPort.path }}
           </option>
         </select>
         <span class="com-status-txt">
-          {{ this.isConnectedToCom ? 'is connected' : 'is not connected' }}
+          {{ this.isSerialPortOpen ? 'is connected' : 'is not connected' }}
         </span>
       </div>
       <div class="flex-center">
@@ -57,60 +57,43 @@
 import { Component, Vue } from 'vue-property-decorator';
 import SerialPort, { PortInfo } from 'serialport';
 import { Logger, LogMessageId } from '../services/LogService';
+import SerialComService from '../services/SerialComService';
 
 @Component
 export default class Controls extends Vue {
-  private isConnectedToCom: boolean;
-  private usbPorts: PortInfo[];
-  private selectedUsbPort: PortInfo | null;
-  private selectedUsbPortPath: string;
+  private isSerialPortOpen: boolean;
+  private serialPorts: PortInfo[];
+  private serialPortPath: string;
 
   public constructor() {
     super();
-    this.isConnectedToCom = false;
-    this.usbPorts = [];
-    this.selectedUsbPort = null;
-    this.selectedUsbPortPath = 'None';
+    this.serialPorts = [];
+    this.serialPortPath = 'None';
+    this.isSerialPortOpen = false;
   }
 
-  private mounted() {
-    SerialPort.list().then(usbPorts => {
-      this.usbPorts = usbPorts;
-      if (usbPorts.length > 0) {
-        this.selectedUsbPort = this.usbPorts[0];
-        this.selectedUsbPortPath = this.usbPorts[0].path;
-        const serialPort = new SerialPort(
-          this.selectedUsbPort.path,
-          {
-            baudRate: 9600,
-            dataBits: 8, // defaults for Arduino serial communication
-            parity: 'none',
-            stopBits: 1
-          },
-          error => {
-            if (error) {
-              Logger.error(
-                `Could not connect to serial port ${this.selectedUsbPortPath}. Error: ${error}`,
-                LogMessageId.CO_SERIAL_PORT_CON_ERROR
-              );
-            }
-          }
-        );
+  private async mounted() {
+    this.serialPorts = await SerialComService.getPorts();
+    if (this.serialPorts.length == 0) {
+      Logger.warn(
+        'Could not find any serial ports',
+        LogMessageId.CO_SERIAL_PORT_CON_ERROR
+      );
+      return;
+    }
 
-        serialPort.on('open', () => {
-          Logger.info(
-            `Serial connection to port ${this.selectedUsbPortPath} open`,
-            LogMessageId.CO_SERIAL_PORT_CON_OPEN
-          );
-          this.isConnectedToCom = true;
-        });
-      } else {
-        Logger.warn(
-          'Could not find any serial ports',
-          LogMessageId.CO_SERIAL_PORT_CON_ERROR
-        );
-      }
+    const defaultPath = this.serialPorts[0].path;
+    this.serialPortPath = defaultPath;
+    SerialComService.initSerialPort(defaultPath);
+    SerialComService.serialPort.on('open', () => {
+      Logger.info(
+        `Serial connection to port ${defaultPath} open`,
+        LogMessageId.CO_SERIAL_PORT_CON_OPEN
+      );
+      SerialComService.isOpen = true;
+      this.isSerialPortOpen = SerialComService.isOpen;
     });
+
   }
 }
 </script>
