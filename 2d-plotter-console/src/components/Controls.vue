@@ -6,7 +6,11 @@
           class="fas fa-stop fa-2x com-status-led"
           :class="{ 'com-status-led-is-connected': this.isSerialPortOpen }"
         ></i>
-        <select class="com-selector" v-model="serialPortPath" @change="this.onComChange">
+        <select
+          class="com-selector"
+          v-model="serialPortPath"
+          @change="this.onSerialPortChange"
+        >
           <option
             v-for="serialPort in serialPorts"
             :value="serialPort.path"
@@ -55,15 +59,15 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import SerialPort, { PortInfo } from 'serialport';
+import { PortInfo } from 'serialport';
 import { Logger, LogMessageId } from '../services/LogService';
 import SerialComService from '../services/SerialComService';
 
 @Component
 export default class Controls extends Vue {
-  private isSerialPortOpen: boolean;
   private serialPorts: PortInfo[];
   private serialPortPath: string;
+  private isSerialPortOpen: boolean;
 
   public constructor() {
     super();
@@ -84,25 +88,16 @@ export default class Controls extends Vue {
 
     const defaultPath = this.serialPorts[0].path;
     this.serialPortPath = defaultPath;
-    this.openSerialPort(defaultPath);
+    SerialComService.openPort(defaultPath, this.updateSerialPortStatus);
   }
 
-  private openSerialPort(path: string) {
-    SerialComService.initSerialPort(path);
-    SerialComService.serialPort.on('open', () => {
-      Logger.info(
-        `Serial connection to port ${path} open`,
-        LogMessageId.CO_SERIAL_PORT_CON_OPEN
-      );
-      SerialComService.isOpen = true;
-      this.isSerialPortOpen = SerialComService.isOpen;
-    });
+  private onSerialPortChange() {
+    SerialComService.closePort(this.updateSerialPortStatus);
+    SerialComService.openPort(this.serialPortPath, this.updateSerialPortStatus);
   }
 
-  private onComChange() {
-    this.isSerialPortOpen = false;
-    SerialComService.serialPort.close();
-    this.openSerialPort(this.serialPortPath);
+  private updateSerialPortStatus() {
+    this.isSerialPortOpen = SerialComService.isOpen;
   }
 }
 </script>

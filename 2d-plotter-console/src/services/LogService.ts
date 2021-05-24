@@ -92,5 +92,7 @@ export const enum LogMessageId {
   CO_LOGGING_COULD_NOT_READ_LOGFILE = 'console.004',
   CO_SERIAL_PORT_CON_ERROR = 'console.005',
   CO_SERIAL_NONE_PORT_FOUND = 'console.006',
-  CO_SERIAL_PORT_CON_OPEN = 'console.007'
+  CO_SERIAL_PORT_CON_OPEN = 'console.007',
+  CO_SERIAL_PORT_CON_CLOSE = 'console.008',
+  CO_SERIAL_PORT_CON_CLOSE_ERROR = 'console.009',
 }
