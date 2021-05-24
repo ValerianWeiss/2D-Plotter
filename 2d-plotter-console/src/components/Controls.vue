@@ -61,19 +61,46 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { PortInfo } from 'serialport';
 import { Logger, LogMessageId } from '../services/LogService';
-import SerialComService from '../services/SerialComService';
+import SerialComService, { MessageType } from '../services/SerialComService';
+import MoveXYCmd from '../classes/commands/MoveXYCmd';
+import MoveZCmd, { ZDirection } from '../classes/commands/MoveZCmd';
+import Cmd from '@/classes/commands/Cmd';
+
+enum XYDirection {
+  UP = 'UP',
+  RIGHT = 'RIGHT',
+  DOWN = 'DOWN',
+  LEFT = 'LEFT'
+}
 
 @Component
 export default class Controls extends Vue {
   private serialPorts: PortInfo[];
   private serialPortPath: string;
   private isSerialPortOpen: boolean;
+  private xyControlsState: Map<XYDirection, boolean>;
+  private zControlsState: Map<ZDirection, boolean>;
+  private movesQueue: Cmd[];
 
   public constructor() {
     super();
     this.serialPorts = [];
     this.serialPortPath = 'None';
     this.isSerialPortOpen = false;
+    this.movesQueue = [];
+
+    this.xyControlsState = new Map();
+    this.xyControlsState.set(XYDirection.UP, false);
+    this.xyControlsState.set(XYDirection.RIGHT, false);
+    this.xyControlsState.set(XYDirection.DOWN, false);
+    this.xyControlsState.set(XYDirection.LEFT, false);
+
+    this.zControlsState = new Map();
+    this.zControlsState.set(ZDirection.UP, false);
+    this.zControlsState.set(ZDirection.DOWN, false);
+
+    window.addEventListener('keydown', this.onKeydown);
+    window.addEventListener('keyup', this.onKeyup);
   }
 
   private async mounted() {
@@ -88,16 +115,128 @@ export default class Controls extends Vue {
 
     const defaultPath = this.serialPorts[0].path;
     this.serialPortPath = defaultPath;
-    SerialComService.openPort(defaultPath, this.updateSerialPortStatus);
+    SerialComService.openPort(defaultPath, this.onPortOpen);
   }
 
   private onSerialPortChange() {
     SerialComService.closePort(this.updateSerialPortStatus);
-    SerialComService.openPort(this.serialPortPath, this.updateSerialPortStatus);
+    SerialComService.openPort(this.serialPortPath, this.onPortOpen);
+  }
+
+  private onPortOpen() {
+    this.updateSerialPortStatus();
+    this.registerMessageHandlers();
   }
 
   private updateSerialPortStatus() {
     this.isSerialPortOpen = SerialComService.isOpen;
+  }
+
+  private registerMessageHandlers() {
+    SerialComService.addMessageHandler((message: string) => {
+      console.log('Move xy response:', message);
+      this.removeCmdFromQueue(cmd => cmd instanceof MoveXYCmd);
+    }, MessageType.MOVE_XY);
+
+    SerialComService.addMessageHandler((message: string) => {
+      console.log('Move z response:', message);
+      this.removeCmdFromQueue(cmd => cmd instanceof MoveZCmd);
+    }, MessageType.MOVE_Z);
+  }
+
+  private removeCmdFromQueue(filter: (cmd: Cmd) => boolean): void {
+    const moveXYCmds = this.movesQueue.filter(filter);
+
+    if (moveXYCmds.length != 1) {
+      const message = `Invalid command count in queue: ${moveXYCmds.length}`;
+      Logger.warn(message, LogMessageId.CO_INVLD_CMD_COUNT_QUEUE);
+      throw new Error(message);
+    }
+
+    const cmdIndex = this.movesQueue.indexOf(moveXYCmds[0]);
+    this.movesQueue.splice(cmdIndex, 1);
+  }
+
+  private writeMove() {
+    this.writeXYMoves();
+    this.writeZMoves();
+  }
+
+  private writeXYMoves() {
+    if (!this.movesQueue.some(cmd => cmd instanceof MoveXYCmd)) {
+      const up = this.xyControlsState.get(XYDirection.UP) || false;
+      const right = this.xyControlsState.get(XYDirection.RIGHT) || false;
+      const down = this.xyControlsState.get(XYDirection.DOWN) || false;
+      const left = this.xyControlsState.get(XYDirection.LEFT) || false;
+
+      if (up || right || down || left) {
+        const moveXYCmd = new MoveXYCmd(up, right, down, left, 25);
+        this.movesQueue.push(moveXYCmd);
+        const cmd = moveXYCmd.serialize();
+        console.log('write xy move');
+        SerialComService.write(cmd);
+      }
+    }
+  }
+
+  private writeZMoves() {
+    if (!this.movesQueue.some(cmd => cmd instanceof MoveZCmd)) {
+      const up = this.zControlsState.get(ZDirection.UP) || false;
+      const down = this.zControlsState.get(ZDirection.DOWN) || false;
+
+      if ((up && !down) || (!up && down)) {
+        const direction = up ? ZDirection.UP : ZDirection.DOWN;
+        const moveZcmd = new MoveZCmd(direction);
+        this.movesQueue.push(moveZcmd);
+        const cmd = moveZcmd.serialize();
+        console.log('write z move');
+        SerialComService.write(cmd);
+      }
+    }
+  }
+
+  private onKeydown(event: KeyboardEvent) {
+    if (event.code == 'ArrowUp') {
+      this.xyControlsState.set(XYDirection.UP, true);
+    }
+    if (event.code == 'ArrowRight') {
+      this.xyControlsState.set(XYDirection.RIGHT, true);
+    }
+    if (event.code == 'ArrowDown') {
+      this.xyControlsState.set(XYDirection.DOWN, true);
+    }
+    if (event.code == 'ArrowLeft') {
+      this.xyControlsState.set(XYDirection.LEFT, true);
+    }
+    if (event.code == 'ShiftLeft') {
+      this.zControlsState.set(ZDirection.UP, true);
+    }
+    if (event.code == 'Space') {
+      this.zControlsState.set(ZDirection.DOWN, true);
+    }
+
+    this.writeMove();
+  }
+
+  private onKeyup(event: KeyboardEvent) {
+    if (event.code == 'ArrowUp') {
+      this.xyControlsState.set(XYDirection.UP, false);
+    }
+    if (event.code == 'ArrowRight') {
+      this.xyControlsState.set(XYDirection.RIGHT, false);
+    }
+    if (event.code == 'ArrowDown') {
+      this.xyControlsState.set(XYDirection.DOWN, false);
+    }
+    if (event.code == 'ArrowLeft') {
+      this.xyControlsState.set(XYDirection.LEFT, false);
+    }
+    if (event.code == 'ShiftLeft') {
+      this.zControlsState.set(ZDirection.UP, false);
+    }
+    if (event.code == 'Space') {
+      this.zControlsState.set(ZDirection.DOWN, false);
+    }
   }
 }
 </script>

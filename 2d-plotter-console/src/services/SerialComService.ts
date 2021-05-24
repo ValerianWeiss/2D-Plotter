@@ -9,12 +9,13 @@ type onCloseCb = () => void;
 type Err = Error | null | undefined;
 
 export enum MessageType {
-  DEFAULT = '0'
+  MOVE_XY = 'M',
+  MOVE_Z = 'Z'
 }
 
 export default class SerialComService {
   public static isOpen = false;
-  private static onMessageCbs = new Map<MessageType, onMessageCb>();
+  private static onMessageCbs = new Map<MessageType, onMessageCb[]>();
   private static messageBuffer = '';
   private static serialPort: SerialPort;
 
@@ -22,23 +23,13 @@ export default class SerialComService {
     return SerialPort.list();
   }
 
-  public static openPort(
-    path: string,
-    onOpenCb?: onOpenCb,
-    onMessageCb?: onMessageCb,
-    messageType?: MessageType
-  ) {
+  public static openPort(path: string, onOpenCb?: onOpenCb) {
     SerialComService.initSerialPort(path);
-    SerialComService.onProtOpen(path, onOpenCb, onMessageCb, messageType);
+    SerialComService.onProtOpen(path, onOpenCb);
     SerialComService.onPortData();
   }
 
-  private static onProtOpen(
-    path: string,
-    onOpenCb?: onOpenCb,
-    onMessageCb?: onMessageCb,
-    messageType?: MessageType
-  ) {
+  private static onProtOpen(path: string, onOpenCb?: onOpenCb) {
     SerialComService.serialPort.on('open', () => {
       Logger.info(
         `Serial connection to port ${path} open`,
@@ -46,17 +37,13 @@ export default class SerialComService {
       );
       SerialComService.isOpen = true;
       if (onOpenCb) onOpenCb();
-      if (onMessageCb) {
-        SerialComService.addMessageHandler(onMessageCb, messageType);
-      }
     });
   }
 
   private static onPortData() {
-    SerialComService.serialPort.on('data', (data: Buffer) => {
-      const str = data.toString();
-      console.log('on data', str);
-      SerialComService.messageBuffer += str;
+    SerialComService.serialPort.on('readable', () => {
+      const data = SerialComService.serialPort.read();
+      SerialComService.messageBuffer += data ? data : '';
       const buffer = SerialComService.messageBuffer;
 
       if (buffer.includes(MESSAGE_SEPERATOR)) {
@@ -69,13 +56,29 @@ export default class SerialComService {
   }
 
   public static onMessage(message: string) {
-    // TODO: Introduce message parsing and just execute callbacks for the type
-    // of the incoming message
-    Logger.info(
-      `Controller message: '${message}'`,
-      LogMessageId.CO_SERIAL_PORT_MSG
-    );
-    SerialComService.onMessageCbs.forEach(cb => cb(message));
+    const infoMessage = `Controller message: '${message}'`;
+    Logger.info(infoMessage, LogMessageId.CO_SERIAL_PORT_MSG);
+
+    const type = SerialComService.getMessageType(message);
+    const cbs = SerialComService.onMessageCbs.get(type) || [];
+    cbs.forEach(cb => cb(message));
+  }
+
+  private static getMessageType(message: string): MessageType {
+    const type = message.charAt(0);
+
+    switch (type) {
+      case MessageType.MOVE_XY:
+        return MessageType.MOVE_XY;
+      case MessageType.MOVE_Z:
+        return MessageType.MOVE_Z;
+      default:
+        Logger.warn(
+          `Received an invalid message type: ${type}`,
+          LogMessageId.CO_SERIAL_PORT_INVLD_MSG_TYPE
+        );
+        throw new Error(`Received an invalid message type: ${type}`);
+    }
   }
 
   public static initSerialPort(path: string): void {
@@ -108,6 +111,8 @@ export default class SerialComService {
           LogMessageId.CO_SERIAL_PORT_CON_CLOSE_ERROR
         );
       } else {
+        SerialComService.onMessageCbs = new Map();
+        SerialComService.messageBuffer = '';
         if (cb) cb();
         Logger.debug(
           `Closed serial port ${SerialComService.serialPort.path}`,
@@ -117,9 +122,13 @@ export default class SerialComService {
     });
   }
 
-  public static addMessageHandler(cb: onMessageCb, type?: MessageType) {
-    if (!type) type = MessageType.DEFAULT;
-    SerialComService.onMessageCbs.set(type, cb);
+  public static addMessageHandler(cb: onMessageCb, type: MessageType) {
+    const cbs = SerialComService.onMessageCbs.get(type);
+    if (cbs) {
+      cbs.push(cb);
+    } else {
+      SerialComService.onMessageCbs.set(type, [cb]);
+    }
   }
 
   public static write(message: string) {
