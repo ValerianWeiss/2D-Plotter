@@ -6,7 +6,7 @@
           class="fas fa-stop fa-2x com-status-led"
           :class="{ 'com-status-led-is-connected': this.isSerialPortOpen }"
         ></i>
-        <select class="com-selector" v-model="serialPortPath">
+        <select class="com-selector" v-model="serialPortPath" @change="this.onComChange">
           <option
             v-for="serialPort in serialPorts"
             :value="serialPort.path"
@@ -84,16 +84,25 @@ export default class Controls extends Vue {
 
     const defaultPath = this.serialPorts[0].path;
     this.serialPortPath = defaultPath;
-    SerialComService.initSerialPort(defaultPath);
+    this.openSerialPort(defaultPath);
+  }
+
+  private openSerialPort(path: string) {
+    SerialComService.initSerialPort(path);
     SerialComService.serialPort.on('open', () => {
       Logger.info(
-        `Serial connection to port ${defaultPath} open`,
+        `Serial connection to port ${path} open`,
         LogMessageId.CO_SERIAL_PORT_CON_OPEN
       );
       SerialComService.isOpen = true;
       this.isSerialPortOpen = SerialComService.isOpen;
     });
+  }
 
+  private onComChange() {
+    this.isSerialPortOpen = false;
+    SerialComService.serialPort.close();
+    this.openSerialPort(this.serialPortPath);
   }
 }
 </script>
