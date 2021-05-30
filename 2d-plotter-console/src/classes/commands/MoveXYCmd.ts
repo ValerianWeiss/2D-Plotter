@@ -2,23 +2,23 @@ import Cmd from './Cmd';
 import CmdType from './CmdType';
 
 export default class XYCmd extends Cmd {
-  public up: boolean;
+  public top: boolean;
   public right: boolean;
-  public down: boolean;
+  public bottom: boolean;
   public left: boolean;
   public stepWidth: number;
 
   public constructor(
-    up: boolean,
+    top: boolean,
     right: boolean,
-    down: boolean,
+    bottom: boolean,
     left: boolean,
     stepWidth: number
   ) {
     super();
-    this.up = up;
+    this.top = top;
     this.right = right;
-    this.down = down;
+    this.bottom = bottom;
     this.left = left;
     this.stepWidth = stepWidth;
   }
@@ -30,10 +30,10 @@ export default class XYCmd extends Cmd {
   public serialize(): string {
     const type = CmdType.MOVE_XY;
     const stepWidth = this.serializeSetpWidth();
-    const up = this.serializeBool(this.up);
+    const top = this.serializeBool(this.top);
     const right = this.serializeBool(this.right);
-    const down = this.serializeBool(this.down);
+    const bottom = this.serializeBool(this.bottom);
     const left = this.serializeBool(this.left);
-    return `${type}${stepWidth}${up}${right}${down}${left}${this.CMD_SEP}`;
+    return `${type}${stepWidth}${top}${right}${bottom}${left}${this.CMD_SEP}`;
   }
 }
