@@ -9,6 +9,13 @@ const char CMD_MOVE_Z = 'Z';
 const char RSP_OK = '0';
 const char RSP_ERROR = 'E';
 
+// Response messages
+const String MESSAGE_SEP = "\n";
+const String MOVE_XY_OK = String(CMD_MOVE_XY) + String(RSP_OK) + MESSAGE_SEP;
+const String MOVE_Z_OK = String(CMD_MOVE_Z) + String(RSP_OK) + MESSAGE_SEP;
+const String MOVE_XY_NOT_OK = String(CMD_MOVE_XY) + String(RSP_ERROR) + MESSAGE_SEP;
+const String MOVE_Z_NOT_OK = String(CMD_MOVE_Z) + String(RSP_ERROR) + MESSAGE_SEP;
+
 void read()
 {
     while (Serial.available() > 0)
@@ -17,7 +24,7 @@ void read()
         buf[bufIndex] = c;
         bufIndex++;
 
-        if (c == '\n') 
+        if (c == '\n')
         {
             processMessage(buf);
             memset(buf, '\0', sizeof(buf));
@@ -33,25 +40,21 @@ void write(String message)
     Serial.write(data);
 }
 
-void processMoveXYMessage(char message[]) 
-{   
-    String response = "M0Got a move XY message\n";
-    // String response = CMD_MOVE_XY + RSP_OK + " Got a move XY message\n";
-    write(response);
+void processMoveXYMessage(char message[])
+{
+    write(MOVE_XY_OK);
 }
 
-void processMoveZMessage(char message[]) 
-{   
-    String response = "Z0Got a move Z message\n";
-    // String response = CMD_MOVE_Z + RSP_OK + " Got a move Z message\n";
-    write(response);
+void processMoveZMessage(char message[])
+{
+    write(MOVE_Z_OK);
 }
 
-void processMessage(char message[]) 
+void processMessage(char message[])
 {
     char type = message[0];
 
-    switch (type) 
+    switch (type)
     {
         case CMD_MOVE_XY:
             processMoveXYMessage(message);
@@ -60,17 +63,17 @@ void processMessage(char message[])
             processMoveZMessage(message);
             break;
         default:
-            String response = RSP_ERROR + " Invalid command type " + type;
+            String response = String(RSP_ERROR) + " Invalid command type " + type;
             break;
     }
 }
 
-void setup() 
+void setup()
 {
     Serial.begin(9600);
 }
 
-void loop() 
+void loop()
 {
     read();
     delay(200);
