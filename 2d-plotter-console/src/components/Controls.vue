@@ -41,14 +41,14 @@
           </div>
           <div
             class="control-btn flex-center right-btn"
-            :class="{ 'control-btn-pressed': this.isBottomKeyPressed }"
+            :class="{ 'control-btn-pressed': this.isRightKeyPressed }"
           >
             <i class="fas fa-arrow-right fa-lg"></i>
             <span class="xy-control-btn-label">+x</span>
           </div>
           <div
             class="control-btn flex-center down-btn"
-            :class="{ 'control-btn-pressed': this.isRightKeyPressed }"
+            :class="{ 'control-btn-pressed': this.isBottomKeyPressed }"
           >
             <i class="fas fa-arrow-down fa-lg"></i>
             <span class="xy-control-btn-label">-y</span>
@@ -192,7 +192,7 @@ export default class Controls extends Vue {
         const moveXYCmd = new MoveXYCmd(top, right, bottom, left, 25);
         this.movesQueue.push(moveXYCmd);
         const cmd = moveXYCmd.serialize();
-        console.log('write xy move');
+        console.log('write xy move', cmd);
         SerialComService.write(cmd);
       }
     }
@@ -208,7 +208,7 @@ export default class Controls extends Vue {
         const moveZcmd = new MoveZCmd(direction);
         this.movesQueue.push(moveZcmd);
         const cmd = moveZcmd.serialize();
-        console.log('write z move');
+        console.log('write z move', cmd);
         SerialComService.write(cmd);
       }
     }
