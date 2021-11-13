@@ -6,4 +6,8 @@ export default abstract class Cmd {
   protected serializeBool(bool: boolean): string {
     return bool ? '1' : '0';
   }
+
+  protected serializeInt(num: number): string {
+    return num.toString(16).padStart(4, '0');
+  }
 }

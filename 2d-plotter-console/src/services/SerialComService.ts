@@ -1,5 +1,6 @@
 import { Logger, LogMessageId } from './LogService';
 import SerialPort, { PortInfo } from 'serialport';
+import CmdType, { getCmdType } from '@/classes/machine/commands/CmdType';
 
 const MESSAGE_SEPERATOR = '\n';
 
@@ -8,14 +9,9 @@ type onOpenCb = () => void;
 type onCloseCb = () => void;
 type Err = Error | null | undefined;
 
-export enum MessageType {
-  MOVE_XY = 'M',
-  MOVE_Z = 'Z'
-}
-
 export default class SerialComService {
   public static isOpen = false;
-  private static onMessageCbs = new Map<MessageType, onMessageCb[]>();
+  private static onMessageCbs = new Map<CmdType, onMessageCb[]>();
   private static messageBuffer = '';
   private static serialPort: SerialPort;
 
@@ -58,27 +54,9 @@ export default class SerialComService {
   public static onMessage(message: string) {
     const infoMessage = `Controller message: '${message}'`;
     Logger.info(infoMessage, LogMessageId.CO_SERIAL_PORT_MSG);
-
-    const type = SerialComService.getMessageType(message);
+    const type = getCmdType(message[0]);
     const cbs = SerialComService.onMessageCbs.get(type) || [];
     cbs.forEach(cb => cb(message));
-  }
-
-  private static getMessageType(message: string): MessageType {
-    const type = message.charAt(0);
-
-    switch (type) {
-      case MessageType.MOVE_XY:
-        return MessageType.MOVE_XY;
-      case MessageType.MOVE_Z:
-        return MessageType.MOVE_Z;
-      default:
-        Logger.warn(
-          `Received an invalid message type: ${type}`,
-          LogMessageId.CO_SERIAL_PORT_INVLD_MSG_TYPE
-        );
-        throw new Error(`Received an invalid message type: ${type}`);
-    }
   }
 
   public static initSerialPort(path: string): void {
@@ -122,7 +100,7 @@ export default class SerialComService {
     });
   }
 
-  public static addMessageHandler(cb: onMessageCb, type: MessageType) {
+  public static addMessageHandler(cb: onMessageCb, type: CmdType) {
     const cbs = SerialComService.onMessageCbs.get(type);
     if (cbs) {
       cbs.push(cb);
@@ -131,7 +109,7 @@ export default class SerialComService {
     }
   }
 
-  public static write(message: string) {
+  public static send(message: string) {
     message += MESSAGE_SEPERATOR;
     SerialComService.serialPort.write(Buffer.from(message), (error: Err) => {
       if (error) {

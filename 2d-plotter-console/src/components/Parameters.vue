@@ -8,7 +8,7 @@
         <span>Set z-max</span>
       </div>
     </div>
-    <div class="btn flex-center origin-btn">
+    <div class="btn flex-center origin-btn" @click="this.onSetOrigin">
       <span>Set origin</span>
     </div>
     <div class="data-container">
@@ -41,6 +41,8 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import SetOriginCmd from '../classes/machine/commands/SetOriginCmd';
+import SerialComService from '../services/SerialComService';
 
 @Component
 export default class Parameters extends Vue {
@@ -51,6 +53,12 @@ export default class Parameters extends Vue {
     super();
     this.currentPosition = { x: '-', y: '-', z: '-' };
     this.resolutionSettings = { x: '1024', y: '1024' };
+  }
+
+  private onSetOrigin() {
+    const setOriginCmd = new SetOriginCmd();
+    const cmd = setOriginCmd.serialize();
+    SerialComService.send(cmd);
   }
 }
 </script>

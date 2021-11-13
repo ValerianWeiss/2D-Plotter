@@ -79,10 +79,13 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { PortInfo } from 'serialport';
 import { Logger, LogMessageId } from '../services/LogService';
-import SerialComService, { MessageType } from '../services/SerialComService';
-import MoveXYCmd from '../classes/commands/MoveXYCmd';
-import MoveZCmd, { ZDirection } from '../classes/commands/MoveZCmd';
-import Cmd from '@/classes/commands/Cmd';
+import SerialComService from '../services/SerialComService';
+import MoveXYCmd from '../classes/machine/commands/MoveXYCmd';
+import MoveZCmd, { ZDirection } from '../classes/machine/commands/MoveZCmd';
+import Cmd from '@/classes/machine/commands/Cmd';
+import CmdType from '@/classes/machine/commands/CmdType';
+import PositionService from '@/services/PositionService';
+import Position from '@/classes/Position';
 
 @Component
 export default class Controls extends Vue {
@@ -90,13 +93,14 @@ export default class Controls extends Vue {
   private serialPortPath: string;
   private isSerialPortOpen: boolean;
   private movesQueue: Cmd[];
+  private stepWidth: number;
 
   private readonly topKey = 'ArrowUp';
   private readonly rightKey = 'ArrowRight';
   private readonly bottomKey = 'ArrowDown';
   private readonly leftKey = 'ArrowLeft';
-  private readonly downKey = 'Slash'; // BracketRight is '+' on mac keyboard GER layout
-  private readonly upKey = 'BracketRight'; // Slash is '-' on mac keyboard GER layout
+  private readonly downKey = 'Slash'; // Slash is '-' on mac keyboard GER layout
+  private readonly upKey = 'BracketRight'; // BracketRight is '+' on mac keyboard GER layout
 
   private isTopKeyPressed: boolean;
   private isRightKeyPressed: boolean;
@@ -117,6 +121,7 @@ export default class Controls extends Vue {
     this.isLeftKeyPressed = false;
     this.isDownKeyPressed = false;
     this.isUpKeyPressed = false;
+    this.stepWidth = 25;
 
     window.addEventListener('keydown', this.onKeydown);
     window.addEventListener('keyup', this.onKeyup);
@@ -152,15 +157,17 @@ export default class Controls extends Vue {
   }
 
   private registerMessageHandlers() {
-    SerialComService.addMessageHandler((message: string) => {
-      console.log('Move xy response:', message);
+    SerialComService.addMessageHandler(() => {
       this.removeCmdFromQueue(cmd => cmd instanceof MoveXYCmd);
-    }, MessageType.MOVE_XY);
+    }, CmdType.MOVE_XY);
+
+    SerialComService.addMessageHandler(() => {
+      this.removeCmdFromQueue(cmd => cmd instanceof MoveZCmd);
+    }, CmdType.MOVE_Z);
 
     SerialComService.addMessageHandler((message: string) => {
-      console.log('Move z response:', message);
-      this.removeCmdFromQueue(cmd => cmd instanceof MoveZCmd);
-    }, MessageType.MOVE_Z);
+      PositionService.eventBus.emit('onGetCurrPosRes', null, message);
+    }, CmdType.GET_CURR_POSS);
   }
 
   private removeCmdFromQueue(filter: (cmd: Cmd) => boolean): void {
@@ -176,12 +183,12 @@ export default class Controls extends Vue {
     this.movesQueue.splice(cmdIndex, 1);
   }
 
-  private writeMove() {
-    this.writeXYMoves();
-    this.writeZMoves();
+  private sendMoves() {
+    this.sendXYMove();
+    this.sendZMove();
   }
 
-  private writeXYMoves() {
+  private sendXYMove() {
     if (!this.movesQueue.some(cmd => cmd instanceof MoveXYCmd)) {
       const top = this.isTopKeyPressed;
       const right = this.isRightKeyPressed;
@@ -189,16 +196,34 @@ export default class Controls extends Vue {
       const left = this.isLeftKeyPressed;
 
       if (top || right || bottom || left) {
-        const moveXYCmd = new MoveXYCmd(top, right, bottom, left, 25);
-        this.movesQueue.push(moveXYCmd);
-        const cmd = moveXYCmd.serialize();
-        console.log('write xy move', cmd);
-        SerialComService.write(cmd);
+        PositionService.fetchCurrentPosition().then(response => {
+          const currentPosition = response.currentPosition;
+          let x = currentPosition.x;
+          let y = currentPosition.y;
+          x = right ? x + this.stepWidth : x;
+          x = left ? x - this.stepWidth : x;
+          y = top ? y + this.stepWidth : y;
+          y = bottom ? y - this.stepWidth : y;
+          const targetPosition = new Position(x, y, currentPosition.z);
+
+          if (targetPosition.x < 0 || targetPosition.y < 0) {
+            Logger.info(
+              `Move to target position x: ${targetPosition.x} y: ${targetPosition.y} is invalid. Negative coordinates are not allowed`,
+              LogMessageId.CO_INVALID_MOVE_XY_CMD
+            );
+            return;
+          }
+
+          const moveXYCmd = new MoveXYCmd(targetPosition.x, targetPosition.y);
+          this.movesQueue.push(moveXYCmd);
+          const cmd = moveXYCmd.serialize();
+          SerialComService.send(cmd);
+        });
       }
     }
   }
 
-  private writeZMoves() {
+  private sendZMove() {
     if (!this.movesQueue.some(cmd => cmd instanceof MoveZCmd)) {
       const up = this.isUpKeyPressed;
       const down = this.isDownKeyPressed;
@@ -208,15 +233,14 @@ export default class Controls extends Vue {
         const moveZcmd = new MoveZCmd(direction);
         this.movesQueue.push(moveZcmd);
         const cmd = moveZcmd.serialize();
-        console.log('write z move', cmd);
-        SerialComService.write(cmd);
+        SerialComService.send(cmd);
       }
     }
   }
 
   private onKeydown(event: KeyboardEvent) {
     this.setKeyPressed(event, true);
-    this.writeMove();
+    this.sendMoves();
   }
 
   private onKeyup(event: KeyboardEvent) {

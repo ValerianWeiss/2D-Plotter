@@ -86,17 +86,12 @@ export class Logger {
 
 export const enum LogMessageId {
   CO_STARTED = 'console.000',
-  MW_CREATE_WS_CONNECTION = 'console.001',
-  MW_CONNECTED_WITH_MW = 'console.002',
-  MW_ON_ERROR = 'console.003',
-  CO_LOGGING_COULD_NOT_READ_LOGFILE = 'console.004',
-  CO_SERIAL_PORT_CON_ERROR = 'console.005',
-  CO_SERIAL_NONE_PORT_FOUND = 'console.006',
-  CO_SERIAL_PORT_CON_OPEN = 'console.007',
-  CO_SERIAL_PORT_CON_CLOSE = 'console.008',
-  CO_SERIAL_PORT_CON_CLOSE_ERROR = 'console.009',
-  CO_SERIAL_PORT_WRITE_ERROR = 'console.010',
-  CO_SERIAL_PORT_MSG = 'console.011',
-  CO_SERIAL_PORT_INVLD_MSG_TYPE = 'console.012',
-  CO_INVLD_CMD_COUNT_QUEUE = 'console.013'
+  CO_SERIAL_PORT_CON_ERROR = 'console.001',
+  CO_SERIAL_PORT_CON_OPEN = 'console.002',
+  CO_SERIAL_PORT_CON_CLOSE = 'console.003',
+  CO_SERIAL_PORT_CON_CLOSE_ERROR = 'console.004',
+  CO_SERIAL_PORT_WRITE_ERROR = 'console.005',
+  CO_SERIAL_PORT_MSG = 'console.006',
+  CO_INVLD_CMD_COUNT_QUEUE = 'console.007',
+  CO_INVALID_MOVE_XY_CMD = 'console.008'
 }
