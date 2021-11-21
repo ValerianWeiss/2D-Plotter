@@ -12,15 +12,13 @@
   "main": "background.js",
   "dependencies": {
     "@types/serialport": "^8.0.1",
-    "@types/ws": "^7.4.0",
     "core-js": "^3.6.5",
     "js-event-bus": "^1.1.1",
     "serialport": "^9.0.6",
     "vue": "^2.6.11",
     "vue-class-component": "^7.2.3",
     "vue-property-decorator": "^8.4.2",
-    "vue-radial-progress": "^0.3.2",
-    "ws": "^7.4.1"
+    "vue-radial-progress": "^0.3.2"
   },
   "devDependencies": {
     "@types/electron-devtools-installer": "^2.2.0",
