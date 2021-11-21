@@ -18,6 +18,6 @@ export default class MoveXYCmd extends Cmd {
     const stepWidth = this.serializeInt(this.stepWidth);
     const xTargetPos = this.serializeInt(this.xTargetPos);
     const yTargetPos = this.serializeInt(this.yTargetPos);
-    return `${type}${xTargetPos}${yTargetPos}${stepWidth}${this.CMD_SEP}`;
+    return `${type}${xTargetPos}${yTargetPos}${stepWidth}`;
   }
 }

@@ -121,7 +121,7 @@ export default class Controls extends Vue {
     this.isLeftKeyPressed = false;
     this.isDownKeyPressed = false;
     this.isUpKeyPressed = false;
-    this.stepWidth = 25;
+    this.stepWidth = 100;
 
     window.addEventListener('keydown', this.onKeydown);
     window.addEventListener('keyup', this.onKeyup);
@@ -139,17 +139,13 @@ export default class Controls extends Vue {
 
     const defaultPath = this.serialPorts[0].path;
     this.serialPortPath = defaultPath;
-    SerialComService.openPort(defaultPath, this.onPortOpen);
+    this.registerMessageHandlers();
+    SerialComService.openPort(defaultPath, this.updateSerialPortStatus);
   }
 
   private onSerialPortChange() {
     SerialComService.closePort(this.updateSerialPortStatus);
-    SerialComService.openPort(this.serialPortPath, this.onPortOpen);
-  }
-
-  private onPortOpen() {
-    this.updateSerialPortStatus();
-    this.registerMessageHandlers();
+    SerialComService.openPort(this.serialPortPath, this.updateSerialPortStatus);
   }
 
   private updateSerialPortStatus() {
@@ -157,17 +153,17 @@ export default class Controls extends Vue {
   }
 
   private registerMessageHandlers() {
-    SerialComService.addMessageHandler(() => {
+    SerialComService.addMessageHandler(CmdType.MOVE_XY, () => {
       this.removeCmdFromQueue(cmd => cmd instanceof MoveXYCmd);
-    }, CmdType.MOVE_XY);
+    });
 
-    SerialComService.addMessageHandler(() => {
+    SerialComService.addMessageHandler(CmdType.MOVE_Z, () => {
       this.removeCmdFromQueue(cmd => cmd instanceof MoveZCmd);
-    }, CmdType.MOVE_Z);
+    });
 
-    SerialComService.addMessageHandler((message: string) => {
+    SerialComService.addMessageHandler(CmdType.CURR_POS, (message: string) => {
       PositionService.eventBus.emit('onGetCurrPosRes', null, message);
-    }, CmdType.GET_CURR_POSS);
+    });
   }
 
   private removeCmdFromQueue(filter: (cmd: Cmd) => boolean): void {
@@ -228,7 +224,7 @@ export default class Controls extends Vue {
       const up = this.isUpKeyPressed;
       const down = this.isDownKeyPressed;
 
-      if ((this.isUpKeyPressed && !down) || (!this.isUpKeyPressed && down)) {
+      if ((up && !down) || (down && !up)) {
         const direction = up ? ZDirection.UP : ZDirection.DOWN;
         const moveZcmd = new MoveZCmd(direction);
         this.movesQueue.push(moveZcmd);

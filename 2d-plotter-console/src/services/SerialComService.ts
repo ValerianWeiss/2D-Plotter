@@ -53,7 +53,7 @@ export default class SerialComService {
 
   public static onMessage(message: string) {
     const infoMessage = `Controller message: '${message}'`;
-    Logger.info(infoMessage, LogMessageId.CO_SERIAL_PORT_MSG);
+    Logger.info(infoMessage, LogMessageId.CO_SERIAL_PORT_RECV_MSG);
     const type = getCmdType(message[0]);
     const cbs = SerialComService.onMessageCbs.get(type) || [];
     cbs.forEach(cb => cb(message));
@@ -89,7 +89,6 @@ export default class SerialComService {
           LogMessageId.CO_SERIAL_PORT_CON_CLOSE_ERROR
         );
       } else {
-        SerialComService.onMessageCbs = new Map();
         SerialComService.messageBuffer = '';
         if (cb) cb();
         Logger.debug(
@@ -100,7 +99,7 @@ export default class SerialComService {
     });
   }
 
-  public static addMessageHandler(cb: onMessageCb, type: CmdType) {
+  public static addMessageHandler(type: CmdType, cb: onMessageCb) {
     const cbs = SerialComService.onMessageCbs.get(type);
     if (cbs) {
       cbs.push(cb);
@@ -110,6 +109,8 @@ export default class SerialComService {
   }
 
   public static send(message: string) {
+    const infoMessage = `Sending message: '${message}'`;
+    Logger.info(infoMessage, LogMessageId.CO_SERIAL_PORT_SEND_MSG);
     message += MESSAGE_SEPERATOR;
     SerialComService.serialPort.write(Buffer.from(message), (error: Err) => {
       if (error) {

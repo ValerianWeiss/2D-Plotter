@@ -12,12 +12,7 @@
         </div>
       </div>
       <div class="textarea-wrapper">
-        <textarea
-          v-model="logs"
-          ref="logs"
-          @scroll="this.disableTailing"
-          readonly
-        ></textarea>
+        <textarea v-model="logs" ref="logs" readonly></textarea>
       </div>
     </div>
   </div>
@@ -53,10 +48,6 @@ export default class Logging extends Vue {
         textarea.scrollTop = textarea.scrollHeight;
       }
     }
-  }
-
-  private disableTailing() {
-    this.isTailing = false;
   }
 }
 </script>

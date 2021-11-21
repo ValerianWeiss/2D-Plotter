@@ -2,7 +2,7 @@ export enum CmdType {
   MOVE_XY = 'M',
   MOVE_Z = 'Z',
   SET_ORIGIN = 'O',
-  GET_CURR_POSS = 'P'
+  CURR_POS = 'P'
 }
 
 export const getCmdType = (cmdType: string): CmdType => {
@@ -14,7 +14,7 @@ export const getCmdType = (cmdType: string): CmdType => {
     case 'O':
       return CmdType.SET_ORIGIN;
     case 'P':
-      return CmdType.GET_CURR_POSS;
+      return CmdType.CURR_POS;
   }
   throw new Error(`Invalid command type: ${cmdType}`);
 };

@@ -40,6 +40,8 @@
 </template>
 
 <script lang="ts">
+import CmdType from '@/classes/machine/commands/CmdType';
+import CurrentPositionResponse from '@/classes/machine/responses/CurrentPositionResponse';
 import { Component, Vue } from 'vue-property-decorator';
 import SetOriginCmd from '../classes/machine/commands/SetOriginCmd';
 import SerialComService from '../services/SerialComService';
@@ -53,6 +55,15 @@ export default class Parameters extends Vue {
     super();
     this.currentPosition = { x: '-', y: '-', z: '-' };
     this.resolutionSettings = { x: '1024', y: '1024' };
+  }
+
+  private mounted() {
+    SerialComService.addMessageHandler(CmdType.CURR_POS, message => {
+      const currentPositionResponse = new CurrentPositionResponse(message);
+      this.currentPosition.x = currentPositionResponse.currentPosition.x.toString();
+      this.currentPosition.y = currentPositionResponse.currentPosition.y.toString();
+      this.currentPosition.z = currentPositionResponse.currentPosition.z.toString();
+    });
   }
 
   private onSetOrigin() {
