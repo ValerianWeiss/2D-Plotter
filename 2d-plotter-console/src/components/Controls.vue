@@ -109,6 +109,8 @@ export default class Controls extends Vue {
   private isDownKeyPressed: boolean;
   private isUpKeyPressed: boolean;
 
+  private controlsInvterval: NodeJS.Timeout | null;
+
   public constructor() {
     super();
     this.serialPorts = [];
@@ -121,6 +123,7 @@ export default class Controls extends Vue {
     this.isLeftKeyPressed = false;
     this.isDownKeyPressed = false;
     this.isUpKeyPressed = false;
+    this.controlsInvterval = null;
     this.stepWidth = 100;
 
     window.addEventListener('keydown', this.onKeydown);
@@ -237,10 +240,28 @@ export default class Controls extends Vue {
   private onKeydown(event: KeyboardEvent) {
     this.setKeyPressed(event, true);
     this.sendMoves();
+
+    if (!this.controlsInvterval) {
+      this.controlsInvterval = setInterval(this.sendMoves, 10);
+    }
   }
 
   private onKeyup(event: KeyboardEvent) {
     this.setKeyPressed(event, false);
+    const allKeysUp = [
+      this.isTopKeyPressed,
+      this.isRightKeyPressed,
+      this.isBottomKeyPressed,
+      this.isLeftKeyPressed,
+      this.isUpKeyPressed,
+      this.isDownKeyPressed
+    ].every(isKeyPressed => !isKeyPressed);
+
+    if (allKeysUp && this.controlsInvterval) {
+      clearInterval(this.controlsInvterval);
+    } else {
+      this.sendMoves();
+    }
   }
 
   private setKeyPressed(event: KeyboardEvent, isKeyPressed: boolean) {
