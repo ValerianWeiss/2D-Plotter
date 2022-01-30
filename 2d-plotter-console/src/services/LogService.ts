@@ -93,6 +93,5 @@ export const enum LogMessageId {
   CO_SERIAL_PORT_WRITE_ERROR = 'console.005',
   CO_SERIAL_PORT_RECV_MSG = 'console.006',
   CO_SERIAL_PORT_SEND_MSG = 'console.007',
-  CO_INVLD_CMD_COUNT_QUEUE = 'console.008',
-  CO_INVALID_MOVE_XY_CMD = 'console.009'
+  CO_INVLD_CMD_COUNT_QUEUE = 'console.008'
 }

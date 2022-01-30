@@ -31,6 +31,8 @@ MultiStepper multiStepper = MultiStepper();
 Servo zservo;
 
 // Consts
+const String MINUS = "-";
+const String PLUS = "+";
 const int MESSAGE_BUFFER_SIZE = 32;
 const int MESSAGE_QUEUE_SIZE = 10;
 const int CURRENT_POS_UPDATE_INTERVAL = 1000;
@@ -92,14 +94,16 @@ void write(String message)
 
 void processMoveXYMessage(String message)
 {
-    String xTargetPosHex = "0x" + message.substring(1, 5);
-    String yTargetPosHex = "0x" + message.substring(5, 9);
-    String stepWidthHex = "0x" + message.substring(9, 13);
+    int xTargetPosSign = getSign(message.substring(1, 2));
+    String xTargetPosHex = "0x" + message.substring(2, 6);
+    int yTargetPosSign = getSign(message.substring(6, 7));
+    String yTargetPosHex = "0x" + message.substring(7, 11);
+    String stepWidthHex = "0x" + message.substring(12, 16);
     long stepWidth = hextol(stepWidthHex);
     long xTargetPos = hextol(xTargetPosHex) * stepWidth;
     long yTargetPos = hextol(yTargetPosHex) * stepWidth;
-    targetPos[0] = xTargetPos;
-    targetPos[1] = yTargetPos;
+    targetPos[0] = xTargetPosSign * xTargetPos;
+    targetPos[1] = yTargetPosSign * yTargetPos;
     isXYMoving = true;
 }
 
@@ -150,14 +154,27 @@ void sendCurrentPosMessage()
 {
     int numberLength = 4;
     char padding = '0';
-    String xHex = String(xstepper.currentPosition(), HEX);
-    String yHex = String(ystepper.currentPosition(), HEX);
-    String zHex = String(targetPos[2], HEX);
-    xHex = padLeft(xHex, numberLength, padding);
-    yHex = padLeft(yHex, numberLength, padding);
-    zHex = padLeft(zHex, numberLength, padding);
+    long x = xstepper.currentPosition();
+    long y = ystepper.currentPosition();
+    long z = targetPos[2];
+    String xHex = String(abs(x), HEX);
+    String yHex = String(abs(y), HEX);
+    String zHex = String(abs(z), HEX);
+    xHex = getSignStr(x) + padLeft(xHex, numberLength, padding);
+    yHex = getSignStr(y) + padLeft(yHex, numberLength, padding);
+    zHex = getSignStr(z) + padLeft(zHex, numberLength, padding);
     String message = CMD_GET_CURR_POS_OK + xHex + yHex + zHex;
     write(message);
+}
+
+String getSignStr(long num)
+{
+  return num < 0 ? MINUS : PLUS;
+}
+
+int getSign(String sign)
+{
+  return sign == MINUS ? -1 : 1;
 }
 
 String padLeft(String str, int length, char padding)

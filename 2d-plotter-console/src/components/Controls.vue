@@ -220,14 +220,6 @@ export default class Controls extends Vue {
         if (top) targetPosition.y += this.stepWidth;
         if (bottom) targetPosition.y -= this.stepWidth;
 
-        if (targetPosition.x < 0 || targetPosition.y < 0) {
-          Logger.info(
-            `Move to target position x: ${targetPosition.x} y: ${targetPosition.y} is invalid. Negative coordinates are not allowed`,
-            LogMessageId.CO_INVALID_MOVE_XY_CMD
-          );
-          return;
-        }
-
         const moveXYCmd = new MoveXYCmd(targetPosition.x, targetPosition.y);
         this.internalPosition = targetPosition;
         this.movesQueue.push(moveXYCmd);

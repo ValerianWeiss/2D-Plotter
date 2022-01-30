@@ -8,6 +8,10 @@ export default abstract class Cmd {
   }
 
   protected serializeInt(num: number): string {
-    return num.toString(16).padStart(4, '0');
+    const sign = num > 0 ? '+' : '-';
+    const absNum = Math.abs(num)
+      .toString(16)
+      .padStart(4, '0');
+    return `${sign}${absNum}`;
   }
 }

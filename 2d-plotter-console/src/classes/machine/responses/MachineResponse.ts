@@ -8,4 +8,10 @@ export default class MachineResponse {
     this.messageType = getMessageType(message[0]);
     this.successful = message[1] == '0';
   }
+
+  protected parseSignedInt(str: string): number {
+    const sign = str.substring(0, 1) == '-' ? -1 : 1;
+    const num = `0x${str.substring(1)}`;
+    return sign * parseInt(num);
+  }
 }
