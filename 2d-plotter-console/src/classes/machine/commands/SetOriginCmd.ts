@@ -1,8 +1,8 @@
 import Cmd from './Cmd';
-import CmdType from './CmdType';
+import MessageType from '../MessageType';
 
 export default class SetOriginCmd extends Cmd {
   public serialize(): string {
-    return `${CmdType.SET_ORIGIN}`;
+    return `${MessageType.SET_ORIGIN}`;
   }
 }

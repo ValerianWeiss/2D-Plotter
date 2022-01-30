@@ -83,7 +83,7 @@ import SerialComService from '../services/SerialComService';
 import MoveXYCmd from '../classes/machine/commands/MoveXYCmd';
 import MoveZCmd, { ZDirection } from '../classes/machine/commands/MoveZCmd';
 import Cmd from '@/classes/machine/commands/Cmd';
-import CmdType from '@/classes/machine/commands/CmdType';
+import MessageType from '@/classes/machine/MessageType';
 import PositionService from '@/services/PositionService';
 import Position from '@/classes/Position';
 
@@ -94,6 +94,7 @@ export default class Controls extends Vue {
   private isSerialPortOpen: boolean;
   private movesQueue: Cmd[];
   private stepWidth: number;
+  private internalPosition: Position | null;
 
   private readonly topKey = 'ArrowUp';
   private readonly rightKey = 'ArrowRight';
@@ -124,6 +125,7 @@ export default class Controls extends Vue {
     this.isDownKeyPressed = false;
     this.isUpKeyPressed = false;
     this.controlsInvterval = null;
+    this.internalPosition = null;
     this.stepWidth = 100;
 
     window.addEventListener('keydown', this.onKeydown);
@@ -131,6 +133,10 @@ export default class Controls extends Vue {
   }
 
   private async mounted() {
+    await this.initSerialPorts();
+  }
+
+  private async initSerialPorts() {
     this.serialPorts = await SerialComService.getPorts();
     if (this.serialPorts.length == 0) {
       Logger.warn(
@@ -143,12 +149,26 @@ export default class Controls extends Vue {
     const defaultPath = this.serialPorts[0].path;
     this.serialPortPath = defaultPath;
     this.registerMessageHandlers();
-    SerialComService.openPort(defaultPath, this.updateSerialPortStatus);
+    SerialComService.openPort(defaultPath, this.onPortOpen);
+  }
+
+  private async initInternalPosition() {
+    const response = await PositionService.fetchCurrentPosition();
+    this.internalPosition = new Position(
+      response.currentPosition.x,
+      response.currentPosition.y,
+      response.currentPosition.z
+    );
   }
 
   private onSerialPortChange() {
     SerialComService.closePort(this.updateSerialPortStatus);
-    SerialComService.openPort(this.serialPortPath, this.updateSerialPortStatus);
+    SerialComService.openPort(this.serialPortPath, this.onPortOpen);
+  }
+
+  private onPortOpen() {
+    this.updateSerialPortStatus();
+    this.initInternalPosition();
   }
 
   private updateSerialPortStatus() {
@@ -156,84 +176,81 @@ export default class Controls extends Vue {
   }
 
   private registerMessageHandlers() {
-    SerialComService.addMessageHandler(CmdType.MOVE_XY, () => {
-      this.removeCmdFromQueue(cmd => cmd instanceof MoveXYCmd);
+    SerialComService.addMessageHandler(MessageType.MOVE_XY, () => {
+      this.removeCmdFromQueue();
     });
 
-    SerialComService.addMessageHandler(CmdType.MOVE_Z, () => {
-      this.removeCmdFromQueue(cmd => cmd instanceof MoveZCmd);
+    SerialComService.addMessageHandler(MessageType.MOVE_Z, () => {
+      this.removeCmdFromQueue();
     });
 
-    SerialComService.addMessageHandler(CmdType.CURR_POS, (message: string) => {
+    SerialComService.addMessageHandler(MessageType.CURR_POS, message => {
       PositionService.eventBus.emit('onGetCurrPosRes', null, message);
     });
   }
 
-  private removeCmdFromQueue(filter: (cmd: Cmd) => boolean): void {
-    const moveCmds = this.movesQueue.filter(filter);
-
-    if (moveCmds.length != 1) {
-      const message = `Invalid command count in queue: ${moveCmds.length}`;
+  private removeCmdFromQueue(): void {
+    if (this.movesQueue.length == 0) {
+      const message = `Invalid command count in queue: 0`;
       Logger.warn(message, LogMessageId.CO_INVLD_CMD_COUNT_QUEUE);
       throw new Error(message);
     }
 
-    const cmdIndex = this.movesQueue.indexOf(moveCmds[0]);
-    this.movesQueue.splice(cmdIndex, 1);
+    this.movesQueue.shift();
   }
 
   private sendMoves() {
-    this.sendXYMove();
-    this.sendZMove();
+    if (this.canSendMoves()) {
+      this.sendXYMove();
+      this.sendZMove();
+    }
+  }
+
+  private canSendMoves(): boolean {
+    return this.movesQueue.length < 3;
   }
 
   private sendXYMove() {
-    if (!this.movesQueue.some(cmd => cmd instanceof MoveXYCmd)) {
+    if (this.internalPosition) {
       const top = this.isTopKeyPressed;
       const right = this.isRightKeyPressed;
       const bottom = this.isBottomKeyPressed;
       const left = this.isLeftKeyPressed;
 
       if (top || right || bottom || left) {
-        PositionService.fetchCurrentPosition().then(response => {
-          const currentPosition = response.currentPosition;
-          let x = currentPosition.x;
-          let y = currentPosition.y;
-          x = right ? x + this.stepWidth : x;
-          x = left ? x - this.stepWidth : x;
-          y = top ? y + this.stepWidth : y;
-          y = bottom ? y - this.stepWidth : y;
-          const targetPosition = new Position(x, y, currentPosition.z);
+        const targetPosition = Object.assign({}, this.internalPosition);
+        if (right) targetPosition.x += this.stepWidth;
+        if (left) targetPosition.x -= this.stepWidth;
+        if (top) targetPosition.y += this.stepWidth;
+        if (bottom) targetPosition.y -= this.stepWidth;
 
-          if (targetPosition.x < 0 || targetPosition.y < 0) {
-            Logger.info(
-              `Move to target position x: ${targetPosition.x} y: ${targetPosition.y} is invalid. Negative coordinates are not allowed`,
-              LogMessageId.CO_INVALID_MOVE_XY_CMD
-            );
-            return;
-          }
+        if (targetPosition.x < 0 || targetPosition.y < 0) {
+          Logger.info(
+            `Move to target position x: ${targetPosition.x} y: ${targetPosition.y} is invalid. Negative coordinates are not allowed`,
+            LogMessageId.CO_INVALID_MOVE_XY_CMD
+          );
+          return;
+        }
 
-          const moveXYCmd = new MoveXYCmd(targetPosition.x, targetPosition.y);
-          this.movesQueue.push(moveXYCmd);
-          const cmd = moveXYCmd.serialize();
-          SerialComService.send(cmd);
-        });
+        const moveXYCmd = new MoveXYCmd(targetPosition.x, targetPosition.y);
+        this.internalPosition = targetPosition;
+        this.movesQueue.push(moveXYCmd);
+        const cmd = moveXYCmd.serialize();
+        SerialComService.send(cmd);
       }
     }
   }
 
   private sendZMove() {
-    if (!this.movesQueue.some(cmd => cmd instanceof MoveZCmd)) {
-      const up = this.isUpKeyPressed;
-      const down = this.isDownKeyPressed;
+    const up = this.isUpKeyPressed;
+    const down = this.isDownKeyPressed;
 
-      if ((up && !down) || (down && !up)) {
-        const direction = up ? ZDirection.UP : ZDirection.DOWN;
-        const moveZcmd = new MoveZCmd(direction);
-        this.movesQueue.push(moveZcmd);
-        const cmd = moveZcmd.serialize();
-        SerialComService.send(cmd);
-      }
+    if ((up && !down) || (down && !up)) {
+      const direction = up ? ZDirection.UP : ZDirection.DOWN;
+      const moveZcmd = new MoveZCmd(direction);
+      this.movesQueue.push(moveZcmd);
+      const cmd = moveZcmd.serialize();
+      SerialComService.send(cmd);
     }
   }
 
@@ -242,7 +259,7 @@ export default class Controls extends Vue {
     this.sendMoves();
 
     if (!this.controlsInvterval) {
-      this.controlsInvterval = setInterval(this.sendMoves, 10);
+      this.controlsInvterval = setInterval(this.sendMoves, 20);
     }
   }
 

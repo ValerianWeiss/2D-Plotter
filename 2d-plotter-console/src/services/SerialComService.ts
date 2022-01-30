@@ -1,17 +1,16 @@
 import { Logger, LogMessageId } from './LogService';
 import SerialPort, { PortInfo } from 'serialport';
-import CmdType, { getCmdType } from '@/classes/machine/commands/CmdType';
+import MessageType, { getMessageType } from '@/classes/machine/MessageType';
 
 const MESSAGE_SEPERATOR = '\n';
 
 type onMessageCb = (message: string) => void;
 type onOpenCb = () => void;
 type onCloseCb = () => void;
-type Err = Error | null | undefined;
 
 export default class SerialComService {
   public static isOpen = false;
-  private static onMessageCbs = new Map<CmdType, onMessageCb[]>();
+  private static onMessageCbs = new Map<MessageType, onMessageCb[]>();
   private static messageBuffer = '';
   private static serialPort: SerialPort;
 
@@ -54,7 +53,7 @@ export default class SerialComService {
   public static onMessage(message: string) {
     const infoMessage = `Controller message: '${message}'`;
     Logger.info(infoMessage, LogMessageId.CO_SERIAL_PORT_RECV_MSG);
-    const type = getCmdType(message[0]);
+    const type = message[0] as MessageType;
     const cbs = SerialComService.onMessageCbs.get(type) || [];
     cbs.forEach(cb => cb(message));
   }
@@ -72,7 +71,7 @@ export default class SerialComService {
       error => {
         if (error) {
           Logger.error(
-            `Could not connect to serial port ${path}. Error: ${error}`,
+            `Could not connect to serial port ${path}. ${error}`,
             LogMessageId.CO_SERIAL_PORT_CON_ERROR
           );
           throw error;
@@ -82,7 +81,7 @@ export default class SerialComService {
   }
 
   public static closePort(cb?: onCloseCb) {
-    SerialComService.serialPort.close((error: Err) => {
+    SerialComService.serialPort.close(error => {
       if (error) {
         Logger.warn(
           `Could not close serial port ${SerialComService.serialPort.path}`,
@@ -99,7 +98,7 @@ export default class SerialComService {
     });
   }
 
-  public static addMessageHandler(type: CmdType, cb: onMessageCb) {
+  public static addMessageHandler(type: MessageType, cb: onMessageCb) {
     const cbs = SerialComService.onMessageCbs.get(type);
     if (cbs) {
       cbs.push(cb);
@@ -112,7 +111,7 @@ export default class SerialComService {
     const infoMessage = `Sending message: '${message}'`;
     Logger.info(infoMessage, LogMessageId.CO_SERIAL_PORT_SEND_MSG);
     message += MESSAGE_SEPERATOR;
-    SerialComService.serialPort.write(Buffer.from(message), (error: Err) => {
+    SerialComService.serialPort.write(Buffer.from(message), error => {
       if (error) {
         Logger.error(
           `Serial port write error occurred: ${error}`,

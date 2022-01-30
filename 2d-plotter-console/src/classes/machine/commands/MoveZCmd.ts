@@ -1,5 +1,5 @@
 import Cmd from './Cmd';
-import CmdType from './CmdType';
+import MessageType from '../MessageType';
 
 export enum ZDirection {
   UP = '1',
@@ -15,6 +15,6 @@ export default class MoveZCmd extends Cmd {
   }
 
   public serialize(): string {
-    return `${CmdType.MOVE_Z}${this.direction}`;
+    return `${MessageType.MOVE_Z}${this.direction}`;
   }
 }

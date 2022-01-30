@@ -1,7 +1,7 @@
 import Position from '@/classes/Position';
-import CmdResponse from './CmdResponse';
+import MachineResponse from './MachineResponse';
 
-export default class CurrentPositionResponse extends CmdResponse {
+export default class CurrentPositionResponse extends MachineResponse {
   public currentPosition: Position;
 
   public constructor(message: string) {

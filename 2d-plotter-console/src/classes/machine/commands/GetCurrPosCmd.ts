@@ -1,8 +1,8 @@
 import Cmd from './Cmd';
-import CmdType from './CmdType';
+import MessageType from '../MessageType';
 
 export default class GetCurrPosCmd extends Cmd {
   public serialize(): string {
-    return `${CmdType.CURR_POS}`;
+    return `${MessageType.CURR_POS}`;
   }
 }

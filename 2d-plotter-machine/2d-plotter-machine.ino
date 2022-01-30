@@ -30,11 +30,18 @@ AccelStepper ystepper = AccelStepper(AccelStepper::DRIVER, 7, 6, 41, 42, true);
 MultiStepper multiStepper = MultiStepper();
 Servo zservo;
 
+// Consts
+const int MESSAGE_BUFFER_SIZE = 32;
+const int MESSAGE_QUEUE_SIZE = 10;
+const int CURRENT_POS_UPDATE_INTERVAL = 1000;
+
 // Variables
 int bufferIndex = 0;
-char buffer[64];
+char buffer[MESSAGE_BUFFER_SIZE];
+int messageQueueIndex = 0;
+int messageProcessingIndex = 0;
+String messageQueue[MESSAGE_QUEUE_SIZE];
 long targetPos[] = {xstepper.currentPosition(), ystepper.currentPosition(), 0};
-long currentPosUpdateInterval = 1000;
 long lastCurrentPosUpdate = 0;
 
 // State flags
@@ -66,7 +73,8 @@ void read()
 
             if (c == '\n')
             {
-                processMessage(buffer);
+                String message = String(buffer);
+                addMessageToQueue(message);
                 memset(buffer, '\0', sizeof(buffer));
                 bufferIndex = 0;
             }
@@ -84,7 +92,6 @@ void write(String message)
 
 void processMoveXYMessage(String message)
 {
-    // M001900000001
     String xTargetPosHex = "0x" + message.substring(1, 5);
     String yTargetPosHex = "0x" + message.substring(5, 9);
     String stepWidthHex = "0x" + message.substring(9, 13);
@@ -129,15 +136,17 @@ long hextol(String str)
 void processStopMessage()
 {
     isXYMoving = false;
+    messageQueueIndex = 0;
+    messageProcessingIndex = 0;
     write(STOP_OK);
 }
 
 void processGetCurrentPosMessage()
 {
-    sendGetCurrentPosMessage();
+    sendCurrentPosMessage();
 }
 
-void sendGetCurrentPosMessage()
+void sendCurrentPosMessage()
 {
     int numberLength = 4;
     char padding = '0';
@@ -160,10 +169,9 @@ String padLeft(String str, int length, char padding)
     return str;
 }
 
-void processMessage(char data[])
+void processMessage(String message)
 {
-    String message = data;
-    char type = data[0];
+    char type = message.charAt(0);
 
     switch (type)
     {
@@ -187,26 +195,49 @@ void processMessage(char data[])
     }
 }
 
-void move() {
-    if (xstepper.distanceToGo() == 0 && ystepper.distanceToGo() == 0 && isXYMoving)
-    {
-        write(MOVE_XY_OK);
-        isXYMoving = false;
-    }
+void addMessageToQueue(String message)
+{
+    messageQueue[messageQueueIndex] = message;
+    messageQueueIndex = ++messageQueueIndex == MESSAGE_QUEUE_SIZE ? 0 : messageQueueIndex++;
+}
 
-    if (isMoving)
+void processMessageQueue()
+{
+    if (messageProcessingIndex != messageQueueIndex && !isXYMoving)
+    {
+        String message = messageQueue[messageProcessingIndex];
+        processMessage(message);
+        messageProcessingIndex = messageProcessingIndex++ == MESSAGE_QUEUE_SIZE ? 0 : messageProcessingIndex++;
+    }
+}
+
+void sendCurrentPos()
+{
+    long currentMillis = millis();
+
+
+    if (currentMillis >= lastCurrentPosUpdate + CURRENT_POS_UPDATE_INTERVAL)
+    {
+        lastCurrentPosUpdate = currentMillis;
+        sendCurrentPosMessage();
+    }
+}
+
+void move()
+{
+    processMessageQueue();
+
+    if (isXYMoving)
     {
         long xyTargetPos[] = {targetPos[0], targetPos[1]};
         multiStepper.moveTo(xyTargetPos);
         multiStepper.run();
     }
 
-    long currentMillis = millis();
-
-    if (currentMillis >= lastCurrentPosUpdate + currentPosUpdateInterval)
+    if (xstepper.distanceToGo() == 0 && ystepper.distanceToGo() == 0 && isXYMoving)
     {
-        lastCurrentPosUpdate = currentMillis;
-        sendGetCurrentPosMessage();
+        write(MOVE_XY_OK);
+        isXYMoving = false;
     }
 }
 
@@ -214,4 +245,5 @@ void loop()
 {
     read();
     move();
+    sendCurrentPos();
 }
