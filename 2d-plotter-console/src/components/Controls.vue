@@ -183,10 +183,6 @@ export default class Controls extends Vue {
     SerialComService.addMessageHandler(MessageType.MOVE_Z, () => {
       this.removeCmdFromQueue();
     });
-
-    SerialComService.addMessageHandler(MessageType.CURR_POS, message => {
-      PositionService.eventBus.emit('onGetCurrPosRes', null, message);
-    });
   }
 
   private removeCmdFromQueue(): void {

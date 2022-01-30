@@ -53,7 +53,7 @@ export default class SerialComService {
   public static onMessage(message: string) {
     const infoMessage = `Controller message: '${message}'`;
     Logger.info(infoMessage, LogMessageId.CO_SERIAL_PORT_RECV_MSG);
-    const type = message[0] as MessageType;
+    const type = getMessageType(message[0]);
     const cbs = SerialComService.onMessageCbs.get(type) || [];
     cbs.forEach(cb => cb(message));
   }
@@ -105,6 +105,16 @@ export default class SerialComService {
     } else {
       SerialComService.onMessageCbs.set(type, [cb]);
     }
+  }
+
+  public static removeMessageHandler(type: MessageType, cb: onMessageCb) {
+    const cbs = SerialComService.onMessageCbs.get(type);
+
+    if (!cbs) {
+      throw Error('Failed to remove serial communication message handler.');
+    }
+    const index = cbs.indexOf(cb);
+    cbs.splice(index, 1);
   }
 
   public static send(message: string) {
