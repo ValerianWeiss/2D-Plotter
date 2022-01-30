@@ -86,6 +86,7 @@ import Cmd from '@/classes/machine/commands/Cmd';
 import MessageType from '@/classes/machine/MessageType';
 import PositionService from '@/services/PositionService';
 import Position from '@/classes/Position';
+import EventService, { Event } from '@/services/EventService';
 
 @Component
 export default class Controls extends Vue {
@@ -130,10 +131,15 @@ export default class Controls extends Vue {
 
     window.addEventListener('keydown', this.onKeydown);
     window.addEventListener('keyup', this.onKeyup);
+    EventService.on(Event.SET_ORIGIN, this.onSetOrigin);
   }
 
   private async mounted() {
     await this.initSerialPorts();
+  }
+
+  private onSetOrigin() {
+    this.initInternalPosition();
   }
 
   private async initSerialPorts() {

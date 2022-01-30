@@ -59,6 +59,7 @@ void setup()
     xstepper.setSpeed(1000);
     ystepper.setMaxSpeed(1000);
     ystepper.setSpeed(1000);
+    sendCurrentPosMessage();
 }
 
 void read()
@@ -76,7 +77,17 @@ void read()
             if (c == '\n')
             {
                 String message = String(buffer);
-                addMessageToQueue(message);
+                char type = message.charAt(0);
+
+                if (type == CMD_MOVE_XY || type == CMD_MOVE_Z)
+                {
+                    addMessageToQueue(message);
+                }
+                else
+                {
+                    processMessage(message);
+                }
+
                 memset(buffer, '\0', sizeof(buffer));
                 bufferIndex = 0;
             }
@@ -109,6 +120,7 @@ void processMoveXYMessage(String message)
 
 void processSetOriginMessage()
 {
+    clearMoves();
     xstepper.setCurrentPosition(0);
     ystepper.setCurrentPosition(0);
     targetPos[0] = 0;
@@ -139,9 +151,7 @@ long hextol(String str)
 
 void processStopMessage()
 {
-    isXYMoving = false;
-    messageQueueIndex = 0;
-    messageProcessingIndex = 0;
+    clearMoves();
     write(STOP_OK);
 }
 
@@ -228,10 +238,16 @@ void processMessageQueue()
     }
 }
 
+void clearMoves()
+{
+    isXYMoving = false;
+    messageQueueIndex = 0;
+    messageProcessingIndex = 0;
+}
+
 void sendCurrentPos()
 {
     long currentMillis = millis();
-
 
     if (currentMillis >= lastCurrentPosUpdate + CURRENT_POS_UPDATE_INTERVAL)
     {

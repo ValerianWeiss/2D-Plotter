@@ -45,6 +45,7 @@ import CurrentPositionResponse from '@/classes/machine/responses/CurrentPosition
 import { Component, Vue } from 'vue-property-decorator';
 import SetOriginCmd from '../classes/machine/commands/SetOriginCmd';
 import SerialComService from '../services/SerialComService';
+import EventService, { Event } from '../services/EventService';
 
 @Component
 export default class Parameters extends Vue {
@@ -70,6 +71,7 @@ export default class Parameters extends Vue {
     const setOriginCmd = new SetOriginCmd();
     const cmd = setOriginCmd.serialize();
     SerialComService.send(cmd);
+    EventService.emit(Event.SET_ORIGIN);
   }
 }
 </script>
